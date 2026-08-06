@@ -6,7 +6,9 @@ name: Terraform Security Scan
 on:
   push:
     branches:
-      - staging
+      - prod
+      - main
+      -staging
   pull_request:
     branches:
       - prod
