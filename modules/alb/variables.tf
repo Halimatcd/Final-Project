@@ -30,6 +30,6 @@ variable "healthCheckPath" {
 }
 
 variable "commonTags" {
-  type        = map(string)
-  default     = {}
+  type    = map(string)
+  default = {}
 }
