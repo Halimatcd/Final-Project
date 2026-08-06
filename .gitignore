@@ -1,0 +1,31 @@
+# Terraform
+**/.terraform/*
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+tfplan
+*.tfplan
+
+# Sensitive - never commit variable overrides with secrets or SSH keys
+*.auto.tfvars
+secrets.tfvars
+
+# SSH keys
+*.pem
+*.ppk
+id_rsa*
+*.key
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

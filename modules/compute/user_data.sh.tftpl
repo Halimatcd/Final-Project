@@ -1,0 +1,49 @@
+#!/bin/bash
+set -euxo pipefail
+
+# ---- Install and start Apache ----
+yum update -y
+yum install -y httpd awscli
+systemctl enable httpd
+systemctl start httpd
+
+# ---- Pull the site image from the private S3 bucket via the instance role ----
+mkdir -p /var/www/html/images
+aws s3 cp "s3://${imageBucketName}/${imageObjectKey}" /var/www/html/images/site-image.jpg || echo "Image download failed - check bucket/key/IAM"
+
+# ---- Instance metadata for the demo (shows load balancing across instances) ----
+TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 300")
+INSTANCE_ID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)
+AZ=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/placement/availability-zone)
+
+# ---- Build the static page ----
+cat > /var/www/html/index.html <<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${groupName} - ${environment}</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 40px; background:#f4f6f8; color:#1b2733; }
+    h1 { color:#146eb4; }
+    .badge { display:inline-block; background:#146eb4; color:#fff; padding:6px 14px; border-radius:20px; margin:6px; }
+    img { max-width: 480px; width: 90%; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.15); margin-top: 20px; }
+    .meta { color:#5b6b7b; margin-top:24px; font-size:14px; }
+  </style>
+</head>
+<body>
+  <h1>${groupName} &mdash; ${environment} Environment</h1>
+  <p>Two-Tier Web Application &bull; ACS730 Final Project</p>
+  <div>
+    <span class="badge">Team: ${teamMembers}</span>
+  </div>
+  <div>
+    <img src="/images/site-image.jpg" alt="Image served from private S3 bucket">
+  </div>
+  <p class="meta">Served by instance <strong>$INSTANCE_ID</strong> in availability zone <strong>$AZ</strong></p>
+</body>
+</html>
+HTML
+
+systemctl restart httpd
